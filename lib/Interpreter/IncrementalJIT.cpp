@@ -19,9 +19,13 @@
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Frontend/CompilerInstance.h>
 
+#include <llvm/ExecutionEngine/Orc/Debugging/DebugInfoSupport.h>
+#include <llvm/ExecutionEngine/Orc/Debugging/DebuggerSupport.h>
+#include <llvm/ExecutionEngine/Orc/Debugging/PerfSupportPlugin.h>
 #include <llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h>
 #include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
+#include <llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderPerf.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -40,7 +44,57 @@ using namespace llvm;
 using namespace llvm::jitlink;
 using namespace llvm::orc;
 
+static LLVM_ATTRIBUTE_USED void linkComponents() {
+  errs() << "Linking in runtime functions\n"
+         << (void*)&llvm_orc_registerJITLoaderPerfStart << '\n'
+         << (void*)&llvm_orc_registerJITLoaderPerfEnd << '\n'
+         << (void*)&llvm_orc_registerJITLoaderPerfImpl << '\n';
+}
+
 namespace {
+  // This could potentially be upstreamed, similar to enableDebuggerSupport()
+  Error enablePerfSupport(LLJIT& J) {
+    auto* ObjLinkingLayer =
+        dyn_cast<ObjectLinkingLayer>(&J.getObjLinkingLayer());
+    if (!ObjLinkingLayer)
+      return make_error<StringError>("Cannot enable LLJIT perf support: "
+                                     "perf support requires JITLink",
+                                     inconvertibleErrorCode());
+    auto ProcessSymsJD = J.getProcessSymbolsJITDylib();
+    if (!ProcessSymsJD)
+      return make_error<StringError>("Cannot enable LLJIT perf support: "
+                                     "Process symbols are not available",
+                                     inconvertibleErrorCode());
+
+    auto& ES = J.getExecutionSession();
+    const auto& TT = J.getTargetTriple();
+
+    switch (TT.getObjectFormat()) {
+      case Triple::ELF: {
+        auto debugInfoPreservationPlugin =
+            DebugInfoPreservationPlugin::Create();
+        if (!debugInfoPreservationPlugin)
+          return debugInfoPreservationPlugin.takeError();
+
+        auto perfSupportPlugin =
+            PerfSupportPlugin::Create(ES.getExecutorProcessControl(),
+                                      *ProcessSymsJD, true, true);
+        if (!perfSupportPlugin)
+          return perfSupportPlugin.takeError();
+
+        ObjLinkingLayer->addPlugin(std::move(*debugInfoPreservationPlugin));
+        ObjLinkingLayer->addPlugin(std::move(*perfSupportPlugin));
+
+        return Error::success();
+      }
+      default:
+        return make_error<StringError>("Cannot enable LLJIT perf support: " +
+                                           Triple::getObjectFormatTypeName(
+                                               TT.getObjectFormat()) +
+                                           " is not supported",
+                                       inconvertibleErrorCode());
+    }
+  }
 
   class ClingMMapper final : public SectionMemoryManager::MemoryMapper {
   public:
@@ -490,6 +544,18 @@ IncrementalJIT::IncrementalJIT(
   LLJITBuilder Builder;
   Builder.setDataLayout(m_TM->createDataLayout());
   Builder.setExecutorProcessControl(std::move(EPC));
+
+  if (m_JITLink) {
+    Builder.setPrePlatformSetup([](llvm::orc::LLJIT& J) {
+      // Try to enable debugging of JIT'd code (only works with JITLink for
+      // ELF and MachO).
+      if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_DEBUG")))
+        consumeError(enableDebuggerSupport(J));
+      if (cling::utils::ConvertEnvValueToBool(std::getenv("CLING_PROFILE")))
+        consumeError(enablePerfSupport(J));
+      return llvm::Error::success();
+    });
+  }
 
   // Create ObjectLinkingLayer with our own MemoryManager.
   Builder.setObjectLinkingLayerCreator([&](ExecutionSession& ES,

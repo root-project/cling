@@ -119,6 +119,26 @@ or
 [cling]$ .help
 ```
 
+Debugging and Profiling JITted Code
+-----------------------------------
+
+Cling provides support for debugging and profiling interpreted (JITted) code.
+- `CLING_DEBUG=1` enables debug symbol emission on interpreted code, allowing
+the use of a standard debugger. Debugging is aided by switching off
+optimisations and adding frame pointers for better stack traces.
+- `CLING_PROFILE=1` enables perf profiling:
+  - When `jitlink` is enabled (`CLING_JITLINK=1`, soon the default), profiling
+requires a [`perf inject`](https://linux.die.net/man/1/perf-inject) step:
+    ```bash
+    perf record -k 1 <cling>
+    perf inject -j -i perf.data -o perf.jitted.data
+    perf report -i perf.jitted.data
+    ```
+  - When `jitlink` is disabled, perf support is enabled with "perf map" (legacy)
+instead of "JIT dump" and there is no need for an inject step.
+
+Debugging and Profiling, both have a runtime cost, and is therefore disabled by
+default.
 
 Jupyter
 -------

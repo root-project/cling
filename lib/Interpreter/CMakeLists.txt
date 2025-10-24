@@ -48,6 +48,7 @@ set(LLVM_LINK_COMPONENTS
   object
   option
   orcjit
+  orcdebugging
   runtimedyld
   scalaropts
   support
