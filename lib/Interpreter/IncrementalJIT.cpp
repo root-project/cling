@@ -400,15 +400,18 @@ public:
 
 static bool UseJITLink(const Triple& TT) {
   bool jitLink = false;
-  // Default to JITLink on macOS, RISC-V and X86_64, as done in (recent) LLVM by
-  // LLJITBuilderState::prepareForConstruction.
+  // Auto-configure JITLink following the logic in
+  // LLJITBuilderState::prepareForConstruction
   switch (TT.getArch()) {
     case Triple::riscv64:
     case Triple::loongarch64: jitLink = true; break;
-    case Triple::aarch64:
-      jitLink = TT.isOSBinFormatMachO() || TT.isOSBinFormatELF();
-      break;
+    case Triple::aarch64: jitLink = !TT.isOSBinFormatCOFF(); break;
+    case Triple::arm:
+    case Triple::armeb:
+    case Triple::thumb:
+    case Triple::thumbeb: jitLink = TT.isOSBinFormatELF(); break;
     case Triple::x86_64: jitLink = !TT.isOSBinFormatCOFF(); break;
+    case Triple::ppc64: jitLink = TT.isPPC64ELFv2ABI(); break;
     case Triple::ppc64le: jitLink = TT.isOSBinFormatELF(); break;
     default: break;
   }
