@@ -362,7 +362,7 @@ else()
     ")
 endif()
 
-# Make sure this goes last so so we can pick up any changes that occured
+# Make sure this goes last so so we can pick up any changes that occurred
 # Also means cling-compiledata.h.in should be edited never cling-compiledata.h
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h
