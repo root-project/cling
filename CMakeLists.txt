@@ -242,7 +242,7 @@ endif()
 
 if(MSVC)
   add_definitions(/DNOMINMAX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:preprocessor")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:preprocessor /D CLANG_EXPORTS=1")
 endif()
 
 if (APPLE)
