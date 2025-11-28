@@ -256,7 +256,7 @@ namespace cling {
                                               const SourceManager& SM) {
     // FileInfos are stored as a mapping, and invalidating the cache
     // can change iteration order.
-    std::vector<std::string> ParsedOpen, Parsed, AST;
+    std::vector<std::string> Parsed, AST;
     for (clang::SourceManager::fileinfo_iterator I = SM.fileinfo_begin(),
            E = SM.fileinfo_end(); I != E; ++I) {
       const clang::FileEntryRef FE = I->first;
@@ -273,15 +273,7 @@ namespace cling {
         if (I->second->getBufferDataIfLoaded()) {
           // There is content - a memory buffer or a file.
           // We know it's a file because we started off the FileEntry.
-
-          // FIXME: LLVM will completely migrate to FileEntryRef.
-          // We added `isOpen()` in our commit:
-          // `Accessor to "is file opened"; this is crucial info for us.`
-          // Move this logic to FileEntryRef or have a workaround.
-          if (FE.getFileEntry().isOpen())
-            ParsedOpen.emplace_back(std::move(fileName));
-          else
-            Parsed.emplace_back(std::move(fileName));
+          Parsed.emplace_back(std::move(fileName));
         } else
          AST.emplace_back(std::move(fileName));
       }
@@ -294,7 +286,6 @@ namespace cling {
       for (auto&& FileName : Files)
         Out << " " << FileName << '\n';
     };
-    DumpFiles("Parsed and open", ParsedOpen);
     DumpFiles("Parsed", Parsed);
     DumpFiles("From AST file", AST);
   }
