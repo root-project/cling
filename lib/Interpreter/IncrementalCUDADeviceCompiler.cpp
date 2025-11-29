@@ -16,6 +16,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 
+#include "llvm/Config/llvm-config.h" // for LLVM_HAS_NVPTX_TARGET
 #include "llvm/Support/Process.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/raw_ostream.h"
@@ -93,6 +94,7 @@ namespace cling {
       return;
     }
 
+#if LLVM_HAS_NVPTX_TARGET
     // initialize NVPTX backend
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXTarget();
@@ -100,6 +102,7 @@ namespace cling {
     LLVMInitializeNVPTXAsmPrinter();
 
     m_Init = true;
+#endif // LLVM_HAS_NVPTX_TARGET
   }
 
   void IncrementalCUDADeviceCompiler::setCuArgs(
