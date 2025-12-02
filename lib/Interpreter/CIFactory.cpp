@@ -1422,6 +1422,11 @@ namespace {
       argvCompile.push_back("-fno-omit-frame-pointer");
     }
 
+    // Promote -Wreturn-type to an error. A missing return in a non-void
+    // function is a warning by default, and cling cannot safely continue and
+    // crashes later.
+    argvCompile.push_back("-Werror=return-type");
+
 #ifdef CLING_WITH_ADAPTIVECPP
     argvCompile.push_back("-D__ACPP_ENABLE_LLVM_SSCP_TARGET__");
     argvCompile.push_back("-Xclang");
