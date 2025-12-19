@@ -55,7 +55,7 @@ void G_b(int vi, double vd) { int x = vi; double y = vd; }
 void G_c(int vi, int vj) { int x = vi; int y = vj; }
 void G_c(int vi, double vd) { int x = vi; double y = vd; }
 template <class T> void G_d(T v) { T x = v; }
-// Note: In CINT, looking up a class template specialization causes
+// Note: In CINT, looking up a class template specialization causes (TODO: recheck with Cling)
 //       instantiation, but looking up a function template specialization
 //       does not, so we explicitly request the instantiations we are
 //       going to lookup so they will be there to find.
@@ -68,7 +68,7 @@ void H_b(int vi, double vd) { int x = vi; double y = vd; }
 void H_c(int vi, int vj) { int x = vi; int y = vj; }
 void H_c(int vi, double vd) { int x = vi; double y = vd; }
 template <class T> void H_d(T v) { T x = v; }
-// Note: In CINT, looking up a class template specialization causes
+// Note: In CINT, looking up a class template specialization causes (TODO: recheck with Cling)
 //       instantiation, but looking up a function template specialization
 //       does not, so we explicitly request the instantiations we are
 //       going to lookup so they will be there to find.

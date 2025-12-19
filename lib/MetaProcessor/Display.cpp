@@ -778,7 +778,7 @@ void ClassPrinter::DisplayClassDecl(const CXXRecordDecl* classDecl)const
     DisplayDataMembers(classDecl, 0);
 
     fOut.Print("List of member functions: -------------------------------------------------\n");
-    //CINT has a format like %-15s blah-blah.
+    //CINT had a format like %-15s blah-blah.
     fOut.Print("filename     line:size busy function type and name\n");
     DisplayMemberFunctions(classDecl);
   }
@@ -1201,7 +1201,7 @@ void GlobalsPrinter::DisplayGlobal(const std::string& name)const
   count += DisplayDCDecls(tuDecl, [&name] (NamedDecl *D)
                                   { return D->getNameAsString() == name; });
 
-  //Do as CINT does:
+  //Do as CINT did:
   if (!count)
     fOut.Print(("Variable " + name + " not found\n").c_str());
 }

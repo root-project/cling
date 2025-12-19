@@ -27,8 +27,8 @@ CSharpRepl) of such kind of software applications name them interactive
 compilers.
 
 One of Cling's main goals is to provide contemporary, high-performance
-alternative of the current C++ interpreter in the ROOT project - CINT. The
-backward-compatibility with CINT is major priority during the development.
+alternative of the forerunner C++ interpreter in the ROOT project - CINT. The
+backward-compatibility with CINT was major priority during the development.
 Cling serves as a core component of the ROOT system for storing and analyzing
 the data of the Large Hadron Collider (LHC) experiments.
 

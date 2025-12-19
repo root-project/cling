@@ -821,7 +821,7 @@ namespace cling {
     return Value;
   }
 
-  ///\brief Maybe transform the input line to implement cint command line
+  ///\brief Maybe transform the input line to implement Cling command line
   /// semantics (declarations are global) and compile to produce a module.
   ///
   Interpreter::CompilationResult
