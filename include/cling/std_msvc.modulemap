@@ -32,10 +32,6 @@ module "std" [system] {
     export *
     header "cassert"
   }
-  module "ccomplex" {
-    export *
-    header "ccomplex"
-  }
   module "cctype" {
     export *
     header "cctype"
@@ -117,17 +113,9 @@ module "std" [system] {
     export *
     header "csignal"
   }
-  module "cstdalign" {
-    export *
-    header "cstdalign"
-  }
   module "cstdarg" {
     export *
     header "cstdarg"
-  }
-  module "cstdbool" {
-    export *
-    header "cstdbool"
   }
   module "cstddef" {
     export *
@@ -148,10 +136,6 @@ module "std" [system] {
   module "cstring" {
     export *
     header "cstring"
-  }
-  module "ctgmath" {
-    export *
-    header "ctgmath"
   }
   module "ctime" {
     export *
