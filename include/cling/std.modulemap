@@ -44,6 +44,7 @@ module "std" [system] {
     header "cinttypes"
   }
   module "ciso646" {
+    requires !cplusplus20
     export *
     header "ciso646"
   }
