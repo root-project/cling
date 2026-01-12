@@ -481,6 +481,7 @@ namespace cling {
       (Magic == file_magic::macho_fixed_virtual_memory_shared_lib
        || Magic == file_magic::macho_dynamically_linked_shared_lib
        || Magic == file_magic::macho_dynamically_linked_shared_lib_stub
+       || Magic == file_magic::macho_bundle
        || Magic == file_magic::macho_universal_binary)
 #elif defined(LLVM_ON_UNIX)
 #ifdef __CYGWIN__
