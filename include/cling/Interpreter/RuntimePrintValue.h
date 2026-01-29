@@ -210,10 +210,20 @@ namespace cling {
       const void* M = TypeTest::isMap(obj);
 
       std::string str("{ ");
-      str += printValue(&(*iter), M);
+
+      // If the dereferenced iterator points to the container itself, we have
+      // infinite recursion. This occurs with scalar values in nlohmann::json
+      auto printWithRecursionGuard = [obj](const auto* ptr,
+                                           const void* M) -> std::string {
+        if (static_cast<const void*>(ptr) == static_cast<const void*>(obj))
+          return "<recursion detected>";
+        return printValue(ptr, M);
+      };
+
+      str += printWithRecursionGuard(&(*iter), M);
       while (++iter != iterEnd) {
         str += ", ";
-        str += printValue(&(*iter), M);
+        str += printWithRecursionGuard(&(*iter), M);
       }
       return str + " }";
     }
