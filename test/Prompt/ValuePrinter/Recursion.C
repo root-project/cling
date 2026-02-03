@@ -18,7 +18,9 @@ class RecursionTest {
 public:
     RecursionTest() = default;
     auto begin() const { return this; } // iterate over self
-    auto end() const { return this + 1; } // just to make sure begin() != end()
+
+    // Hard code the size of the collection to be exactly one and it 'just' contains this object.
+    auto end() const { return this + 1; }
 };
 .rawInput 0
 
