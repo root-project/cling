@@ -9,6 +9,8 @@
 
 #include "cling/UserInterface/UserInterface.h"
 
+#include "cling/Interpreter/CIFactory.h"
+#include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
@@ -53,9 +55,30 @@ namespace {
     std::vector<llvm::LineEditor::Completion> Comps;
     std::vector<std::string> Results;
 
-    MainInterp.codeComplete(Buffer.str(), Pos, Results);
+    std::string resourceDir =
+        MainInterp.getCI()->getHeaderSearchOpts().ResourceDir;
+    // Remove the extra 3 directory names "/lib/clang/3.9.0"
+    llvm::StringRef parentResourceDir =
+        llvm::sys::path::parent_path(llvm::sys::path::parent_path(
+            llvm::sys::path::parent_path(resourceDir)));
+    std::string llvmDir = parentResourceDir.str();
+
+    // arguments for constructing CI
+    const cling::Interpreter::ModuleFileExtensions& moduleExtensions = {};
+
+    auto InterpCI = std::unique_ptr<clang::CompilerInstance>(
+        cling::CIFactory::createCI("\n", MainInterp.getOptions(),
+                                   llvmDir.c_str(), std::nullopt,
+                                   moduleExtensions,
+                                   /*AutoComplete=*/true));
+    auto CC = cling::ClingCodeCompleter();
+    CC.codeComplete(InterpCI.get(), Buffer.str(), 1U, Pos + 1,
+                    MainInterp.getCI(), Results);
+
     for (auto c : Results) {
-      Comps.push_back(llvm::LineEditor::Completion(c, c));
+      if (c.find(CC.Prefix) == 0)
+        Comps.push_back(
+            llvm::LineEditor::Completion(c.substr(CC.Prefix.size()), c));
     }
     return Comps;
   }

@@ -23,7 +23,7 @@ gCling->codeComplete("f", cursor, cc);
 // are required to say that the test is working.
 size_t cnt = 0;
 for (auto& r : cc) {
-  if (r == "float" || r == "[#int#]foo") cnt++;
+  if (r == "float" || r == "foo") cnt++;
 }
 
 cnt

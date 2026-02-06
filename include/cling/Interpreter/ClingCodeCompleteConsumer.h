@@ -5,7 +5,13 @@
 // This file is dual-licensed: you can choose to license it under the University
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
-//------------------------------------------------------------------------------
+//
+//===----------------------------------------------------------------------===//
+//
+// This file follows the same structure/logic (duplicate) as:
+// clang/Interpreter/CodeCompletion.h
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef CLING_CODE_COMPLETE_CONSUMER
 #define CLING_CODE_COMPLETE_CONSUMER
@@ -19,42 +25,6 @@ namespace clang {
 }
 
 namespace cling {
-  /// \brief Create a new printing code-completion consumer that prints its
-  /// results to the given raw output stream.
-  class ClingCodeCompleteConsumer : public CodeCompleteConsumer {
-    CodeCompletionTUInfo m_CCTUInfo;
-    /// \ brief Results of the completer to be printed by the text interface.
-    std::vector<std::string> &m_Completions;
-
-  public:
-    ClingCodeCompleteConsumer(const CodeCompleteOptions &CodeComplOpts,
-                              std::vector<std::string> &completions)
-      : CodeCompleteConsumer(CodeComplOpts),
-        m_CCTUInfo(std::make_shared<GlobalCodeCompletionAllocator>()),
-        m_Completions(completions) {}
-    ~ClingCodeCompleteConsumer() {}
-
-    /// \brief Prints the finalized code-completion results.
-    void ProcessCodeCompleteResults(Sema &S, CodeCompletionContext Context,
-                                    CodeCompletionResult *Results,
-                                    unsigned NumResults) override;
-
-    CodeCompletionAllocator &getAllocator() override {
-      return m_CCTUInfo.getAllocator();
-    }
-
-    CodeCompletionTUInfo &getCodeCompletionTUInfo() override {
-      return m_CCTUInfo;
-    }
-
-    bool isResultFilteredOut(StringRef Filter,
-                             CodeCompletionResult Results) override;
-
-    void getCompletions(std::vector<std::string>& completions) {
-      completions = m_Completions;
-    }
-  };
-
   struct ClingCodeCompleter {
     ClingCodeCompleter() = default;
     std::string Prefix;
@@ -67,10 +37,11 @@ namespace cling {
     /// \param[in] ParentCI The running interpreter compiler instance that
     ///                     provides ASTContexts.
     /// \param[out] CCResults The completion results.
-    void codeComplete(CompilerInstance* InterpCI, llvm::StringRef Content,
-                      unsigned Line, unsigned Col, CompilerInstance* ParentCI,
+    void codeComplete(clang::CompilerInstance* InterpCI,
+                      llvm::StringRef Content, unsigned Line, unsigned Col,
+                      clang::CompilerInstance* ParentCI,
                       std::vector<std::string>& CCResults);
   };
-}
+} // namespace cling
 
 #endif

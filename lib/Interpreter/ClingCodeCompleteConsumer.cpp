@@ -5,83 +5,206 @@
 // This file is dual-licensed: you can choose to license it under the University
 // of Illinois Open Source License or the GNU Lesser General Public License. See
 // LICENSE.TXT for details.
-//------------------------------------------------------------------------------
+//
+//===----------------------------------------------------------------------===//
+//
+// This is mostly a copy of clang/lib/Interpreter/CodeCompletion.cpp
+// TODO: Replace with ReplCodeCompleter
+//
+//===----------------------------------------------------------------------===//
 
 #include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 
 #include "clang/AST/ASTImporter.h"
 #include "clang/AST/DeclLookups.h"
-#include "clang/Basic/Diagnostic.h"
+#include "clang/AST/DeclarationName.h"
+#include "clang/AST/ExternalASTSource.h"
+#include "clang/Basic/IdentifierTable.h"
 #include "clang/Frontend/ASTUnit.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendActions.h"
-#include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/PreprocessorOptions.h"
+#include "clang/Sema/CodeCompleteConsumer.h"
+#include "clang/Sema/CodeCompleteOptions.h"
 #include "clang/Sema/Sema.h"
 
 namespace cling {
-  void ClingCodeCompleteConsumer::ProcessCodeCompleteResults(Sema &SemaRef,
-                                                   CodeCompletionContext Context,
-                                                   CodeCompletionResult *Results,
-                                                           unsigned NumResults) {
-    std::stable_sort(Results, Results + NumResults);
+  const std::string CodeCompletionFileName = "input_line_[Completion]";
 
-    StringRef Filter = SemaRef.getPreprocessor().getCodeCompletionFilter();
-
-    for (unsigned I = 0; I != NumResults; ++I) {
-      if (!Filter.empty() && isResultFilteredOut(Filter, Results[I]))
-        continue;
-      switch (Results[I].Kind) {
-        case CodeCompletionResult::RK_Declaration:
-          if (CodeCompletionString *CCS
-              = Results[I].CreateCodeCompletionString(SemaRef, Context,
-                                                      getAllocator(),
-                                                      m_CCTUInfo,
-                                                      includeBriefComments())) {
-            m_Completions.push_back(CCS->getAsString());
-          }
-          break;
-
-        case CodeCompletionResult::RK_Keyword:
-          m_Completions.push_back(Results[I].Keyword);
-          break;
-
-        case CodeCompletionResult::RK_Macro:
-          if (CodeCompletionString *CCS
-              = Results[I].CreateCodeCompletionString(SemaRef, Context,
-                                                      getAllocator(),
-                                                      m_CCTUInfo,
-                                                      includeBriefComments())) {
-            m_Completions.push_back(CCS->getAsString());
-          }
-          break;
-
-        case CodeCompletionResult::RK_Pattern:
-          m_Completions.push_back(Results[I].Pattern->getAsString());
-          break;
-      }
-    }
+  clang::CodeCompleteOptions getClangCompleteOpts() {
+    clang::CodeCompleteOptions Opts;
+    Opts.IncludeCodePatterns = true;
+    Opts.IncludeMacros = true;
+    Opts.IncludeGlobals = true;
+    Opts.IncludeBriefComments = true;
+    return Opts;
   }
 
-  bool ClingCodeCompleteConsumer::isResultFilteredOut(StringRef Filter,
-                                                  CodeCompletionResult Result) {
-    switch (Result.Kind) {
-      case CodeCompletionResult::RK_Declaration: {
-        return !(
-            Result.Declaration->getIdentifier() &&
-            Result.Declaration->getIdentifier()->getName().starts_with(Filter));
-      }
-      case CodeCompletionResult::RK_Keyword: {
-        return !((StringRef(Result.Keyword)).starts_with(Filter));
-      }
-      case CodeCompletionResult::RK_Macro: {
-        return !(Result.Macro->getName().starts_with(Filter));
-      }
-      case CodeCompletionResult::RK_Pattern: {
-        return !(
-            StringRef((Result.Pattern->getAsString())).starts_with(Filter));
-      }
-      default: llvm_unreachable("Unknown code completion result Kind.");
+  /// Create a new printing code-completion consumer that prints its
+  /// results to the given raw output stream.
+  class ClingCompletionConsumer : public clang::CodeCompleteConsumer {
+  public:
+    ClingCompletionConsumer(std::vector<std::string>& Results,
+                            ClingCodeCompleter& CC)
+        : CodeCompleteConsumer(getClangCompleteOpts()),
+          CCAllocator(std::make_shared<GlobalCodeCompletionAllocator>()),
+          CCTUInfo(CCAllocator), Results(Results), CC(CC) {}
+
+    // The entry of handling code completion. When the function is called, we
+    // create a `Context`-based handler (see classes defined below) to handle
+    // each completion result.
+    void ProcessCodeCompleteResults(class Sema& S,
+                                    CodeCompletionContext Context,
+                                    CodeCompletionResult* InResults,
+                                    unsigned NumResults) final;
+
+    CodeCompletionAllocator& getAllocator() override { return *CCAllocator; }
+
+    CodeCompletionTUInfo& getCodeCompletionTUInfo() override {
+      return CCTUInfo;
     }
+
+  private:
+    std::shared_ptr<GlobalCodeCompletionAllocator> CCAllocator;
+    CodeCompletionTUInfo CCTUInfo;
+    std::vector<std::string>& Results;
+    ClingCodeCompleter& CC;
+  };
+
+  /// The class CompletionContextHandler contains four interfaces, each of
+  /// which handles one type of completion result.
+  /// Its derived classes are used to create concrete handlers based on
+  /// \c CodeCompletionContext.
+  class CompletionContextHandler {
+  protected:
+    CodeCompletionContext CCC;
+    std::vector<std::string>& Results;
+
+  private:
+    Sema& S;
+
+  public:
+    CompletionContextHandler(Sema& S, CodeCompletionContext CCC,
+                             std::vector<std::string>& Results)
+        : CCC(CCC), Results(Results), S(S) {}
+
+    virtual ~CompletionContextHandler() = default;
+    /// Converts a Declaration completion result to a completion string, and
+    /// then stores it in Results.
+    virtual void handleDeclaration(const CodeCompletionResult& Result) {
+      auto PreferredType = CCC.getPreferredType();
+      if (PreferredType.isNull()) {
+        Results.push_back(Result.Declaration->getName().str());
+        return;
+      }
+
+      if (auto* VD = dyn_cast<VarDecl>(Result.Declaration)) {
+        auto ArgumentType = VD->getType();
+        if (PreferredType->isReferenceType()) {
+          QualType RT =
+              PreferredType->castAs<ReferenceType>()->getPointeeType();
+          Sema::ReferenceConversions RefConv;
+          Sema::ReferenceCompareResult RefRelationship =
+              S.CompareReferenceRelationship(SourceLocation(), RT, ArgumentType,
+                                             &RefConv);
+          switch (RefRelationship) {
+            case Sema::Ref_Compatible:
+            case Sema::Ref_Related:
+              Results.push_back(VD->getName().str());
+              break;
+            case Sema::Ref_Incompatible: break;
+          }
+        } else if (S.Context.hasSameType(ArgumentType, PreferredType)) {
+          Results.push_back(VD->getName().str());
+        }
+      }
+    }
+
+    /// Converts a Keyword completion result to a completion string, and then
+    /// stores it in Results.
+    virtual void handleKeyword(const CodeCompletionResult& Result) {
+      auto Prefix = S.getPreprocessor().getCodeCompletionFilter();
+      // Add keyword to the completion results only if we are in a type-aware
+      // situation.
+      if (!CCC.getBaseType().isNull() || !CCC.getPreferredType().isNull())
+        return;
+      if (StringRef(Result.Keyword).starts_with(Prefix))
+        Results.push_back(Result.Keyword);
+    }
+
+    /// Converts a Pattern completion result to a completion string, and then
+    /// stores it in Results.
+    virtual void handlePattern(const CodeCompletionResult& Result) {}
+
+    /// Converts a Macro completion result to a completion string, and then
+    /// stores it in Results.
+    virtual void handleMacro(const CodeCompletionResult& Result) {}
+  };
+
+  class DotMemberAccessHandler : public CompletionContextHandler {
+  public:
+    DotMemberAccessHandler(Sema& S, CodeCompletionContext CCC,
+                           std::vector<std::string>& Results)
+        : CompletionContextHandler(S, CCC, Results) {}
+    void handleDeclaration(const CodeCompletionResult& Result) override {
+      auto* ID = Result.Declaration->getIdentifier();
+      if (!ID)
+        return;
+      if (!isa<CXXMethodDecl>(Result.Declaration))
+        return;
+      const auto* Fun = cast<CXXMethodDecl>(Result.Declaration);
+      if (Fun->getParent()->getCanonicalDecl() ==
+          CCC.getBaseType()->getAsCXXRecordDecl()->getCanonicalDecl()) {
+        Results.push_back(ID->getName().str());
+      }
+    }
+
+    void handleKeyword(const CodeCompletionResult& Result) override {}
+  };
+
+  void ClingCompletionConsumer::ProcessCodeCompleteResults(
+      class Sema& S, CodeCompletionContext Context,
+      CodeCompletionResult* InResults, unsigned NumResults) {
+
+    auto Prefix = S.getPreprocessor().getCodeCompletionFilter();
+    CC.Prefix = Prefix;
+
+    std::unique_ptr<CompletionContextHandler> CCH;
+
+    // initialize fine-grained code completion handler based on the code
+    // completion context.
+    switch (Context.getKind()) {
+      case CodeCompletionContext::CCC_DotMemberAccess:
+        CCH.reset(new DotMemberAccessHandler(S, Context, this->Results));
+        break;
+      default:
+        CCH.reset(new CompletionContextHandler(S, Context, this->Results));
+    };
+
+    for (unsigned I = 0; I < NumResults; I++) {
+      auto& Result = InResults[I];
+      switch (Result.Kind) {
+        case CodeCompletionResult::RK_Declaration:
+          if (Result.Hidden) {
+            break;
+          }
+          if (!Result.Declaration->getDeclName().isIdentifier() ||
+              !Result.Declaration->getName().starts_with(Prefix)) {
+            break;
+          }
+          CCH->handleDeclaration(Result);
+          break;
+        case CodeCompletionResult::RK_Keyword:
+          CCH->handleKeyword(Result);
+          break;
+        case CodeCompletionResult::RK_Macro: CCH->handleMacro(Result); break;
+        case CodeCompletionResult::RK_Pattern:
+          CCH->handlePattern(Result);
+          break;
+      }
+    }
+
+    std::sort(Results.begin(), Results.end());
   }
 
   // Code copied from: clang/lib/Interpreter/CodeCompletion.cpp
@@ -235,23 +358,18 @@ namespace cling {
                                         std::vector<std::string>& CCResults) {
     const std::string CodeCompletionFileName = "input_line_[Completion]";
     auto DiagOpts = DiagnosticOptions();
-    auto consumer =
-        ClingCodeCompleteConsumer(ParentCI->getFrontendOpts().CodeCompleteOpts,
-                                  CCResults);
-    ;
+    auto consumer = ClingCompletionConsumer(CCResults, *this);
 
     auto diag = InterpCI->getDiagnosticsPtr();
-    std::unique_ptr<clang::ASTUnit> AU(
-        clang::ASTUnit::LoadFromCompilerInvocationAction(
-            InterpCI->getInvocationPtr(),
-            std::make_shared<PCHContainerOperations>(), diag));
+    std::unique_ptr<ASTUnit> AU(ASTUnit::LoadFromCompilerInvocationAction(
+        InterpCI->getInvocationPtr(),
+        std::make_shared<PCHContainerOperations>(), diag));
     llvm::SmallVector<clang::StoredDiagnostic, 8> sd = {};
     llvm::SmallVector<const llvm::MemoryBuffer*, 1> tb = {};
     InterpCI->getFrontendOpts().Inputs[0] =
         FrontendInputFile(CodeCompletionFileName, Language::CXX,
                           InputKind::Source);
-    auto Act = std::unique_ptr<IncrementalSyntaxOnlyAction>(
-        new IncrementalSyntaxOnlyAction(ParentCI));
+    auto Act = std::make_unique<IncrementalSyntaxOnlyAction>(ParentCI);
     std::unique_ptr<llvm::MemoryBuffer> MB =
         llvm::MemoryBuffer::getMemBufferCopy(Content, CodeCompletionFileName);
     llvm::SmallVector<ASTUnit::RemappedFile, 4> RemappedFiles;
@@ -263,7 +381,7 @@ namespace cling {
     AU->CodeComplete(CodeCompletionFileName, 1, Col, RemappedFiles, false,
                      false, false, consumer,
                      std::make_shared<clang::PCHContainerOperations>(), *diag,
-                     InterpCI->getLangOpts(), InterpCI->getSourceManager(),
-                     InterpCI->getFileManager(), sd, tb, std::move(Act));
+                     InterpCI->getLangOpts(), AU->getSourceManager(),
+                     AU->getFileManager(), sd, tb, std::move(Act));
   }
 }
