@@ -984,8 +984,6 @@ namespace cling {
     size_t wrapPos = utils::getWrapPoint(wrapped, getCI()->getLangOpts());
     const std::string& Src = WrapInput(wrapped, wrapped, wrapPos);
 
-    CO.CodeCompletionOffset = offset + wrapPos;
-
     StateDebuggerRAII stateDebugger(this);
 
     // This triggers the FileEntry to be created and the completion
