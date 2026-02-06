@@ -1700,7 +1700,7 @@ namespace {
 
     std::vector<std::unique_ptr<ASTConsumer>> Consumers;
 
-    if (!OnlyLex) {
+    if (!OnlyLex && !AutoComplete) {
       assert(customConsumer && "Need to specify a custom consumer"
                                " when not in OnlyLex mode");
       Consumers.push_back(std::move(customConsumer));
@@ -1834,25 +1834,27 @@ namespace {
 
 namespace cling {
 
-  CompilerInstance*
-  CIFactory::createCI(llvm::StringRef Code, const InvocationOptions& Opts,
-                      const char* LLVMDir,
-                      std::unique_ptr<clang::ASTConsumer> consumer,
-                      const ModuleFileExtensions& moduleExtensions,
-                      bool AutoComplete /*false*/) {
+  CompilerInstance* CIFactory::createCI(
+      llvm::StringRef Code, const InvocationOptions& Opts, const char* LLVMDir,
+      std::optional<std::unique_ptr<clang::ASTConsumer>> consumerOpt,
+      const ModuleFileExtensions& moduleExtensions,
+      bool AutoComplete /*false*/) {
     return createCIImpl(llvm::MemoryBuffer::getMemBuffer(Code),
-                        Opts.CompilerOpts, LLVMDir, std::move(consumer),
+                        Opts.CompilerOpts, LLVMDir,
+                        consumerOpt ? std::move(*consumerOpt) : nullptr,
                         moduleExtensions, false /*OnlyLex*/,
                         !Opts.IsInteractive(), AutoComplete);
   }
 
-CompilerInstance* CIFactory::createCI(
-    MemBufPtr_t Buffer, int argc, const char* const* argv, const char* LLVMDir,
-    std::unique_ptr<clang::ASTConsumer> consumer,
-    const ModuleFileExtensions& moduleExtensions, bool OnlyLex /*false*/) {
-  return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv),  LLVMDir,
-                      std::move(consumer), moduleExtensions, OnlyLex);
-}
+  CompilerInstance* CIFactory::createCI(
+      MemBufPtr_t Buffer, int argc, const char* const* argv,
+      const char* LLVMDir,
+      std::optional<std::unique_ptr<clang::ASTConsumer>> consumerOpt,
+      const ModuleFileExtensions& moduleExtensions, bool OnlyLex /*false*/) {
+    return createCIImpl(std::move(Buffer), CompilerOptions(argc, argv), LLVMDir,
+                        consumerOpt ? std::move(*consumerOpt) : nullptr,
+                        moduleExtensions, OnlyLex);
+  }
 
 } // namespace cling
 

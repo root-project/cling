@@ -37,13 +37,15 @@ namespace cling {
 
     clang::CompilerInstance*
     createCI(llvm::StringRef Code, const InvocationOptions& Opts,
-             const char* LLVMDir, std::unique_ptr<clang::ASTConsumer> consumer,
+             const char* LLVMDir,
+             std::optional<std::unique_ptr<clang::ASTConsumer>> consumerOpt,
              const ModuleFileExtensions& moduleExtensions,
              bool AutoComplete = false);
 
     clang::CompilerInstance*
     createCI(MemBufPtr_t Buffer, int Argc, const char* const* Argv,
-             const char* LLVMDir, std::unique_ptr<clang::ASTConsumer> consumer,
+             const char* LLVMDir,
+             std::optional<std::unique_ptr<clang::ASTConsumer>> consumerOpt,
              const ModuleFileExtensions& moduleExtensions,
              bool OnlyLex = false);
   } // namespace CIFactory

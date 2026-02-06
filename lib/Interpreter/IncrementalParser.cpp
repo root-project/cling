@@ -293,7 +293,8 @@ namespace cling {
     std::unique_ptr<cling::DeclCollector> consumer;
     consumer.reset(m_Consumer = new cling::DeclCollector());
     m_CI.reset(CIFactory::createCI("\n", interp->getOptions(), llvmdir,
-                                   std::move(consumer), moduleExtensions));
+                                   std::make_optional(std::move(consumer)),
+                                   moduleExtensions));
 
     if (!m_CI) {
       cling::errs() << "Compiler instance could not be created.\n";

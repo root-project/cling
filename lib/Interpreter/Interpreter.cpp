@@ -1036,12 +1036,11 @@ namespace cling {
     std::string llvmDir = parentResourceDir.str();
 
     // arguments for constructing CI
-    auto declCollector = std::make_unique<cling::DeclCollector>();
     const ModuleFileExtensions& moduleExtensions = {};
 
     auto InterpCI = std::unique_ptr<clang::CompilerInstance>(
-        CIFactory::createCI("\n", getOptions(), llvmDir.c_str(),
-                            std::move(declCollector), moduleExtensions,
+        CIFactory::createCI("\n", getOptions(), llvmDir.c_str(), std::nullopt,
+                            moduleExtensions,
                             /*AutoComplete=*/true));
 
     auto CC = ClingCodeCompleter();
