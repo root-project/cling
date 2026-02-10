@@ -25,6 +25,7 @@
 #endif
 #ifdef __cpp_lib_source_location
 #include <source_location>
+#include <sstream>
 #endif
 #include <string>
 #include <tuple>
@@ -151,8 +152,12 @@ namespace cling {
   }
 
 #ifdef __cpp_lib_source_location
-  CLING_LIB_EXPORT
-  std::string printValue(const std::source_location* location);
+  inline std::string printValue(const std::source_location* location) {
+    std::ostringstream strm;
+    strm << location->file_name() << ":" << location->line() << ":"
+         << location->function_name();
+    return strm.str();
+  }
 #endif
 
   // cling::Value
