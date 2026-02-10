@@ -11,6 +11,7 @@ set(LIBS
   clangCodeGen
   clangDriver
   clangFrontend
+  clangInterpreter
   clangParse
   clangSema
   clangAnalysis
@@ -78,7 +79,6 @@ add_cling_library(clingInterpreter OBJECT
   CheckEmptyTransactionTransformer.cpp
   CIFactory.cpp
   ClangInternalState.cpp
-  ClingCodeCompleteConsumer.cpp
   ClingPragmas.cpp
   DeclCollector.cpp
   DeclExtractor.cpp

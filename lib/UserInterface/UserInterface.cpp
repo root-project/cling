@@ -10,7 +10,6 @@
 #include "cling/UserInterface/UserInterface.h"
 
 #include "cling/Interpreter/CIFactory.h"
-#include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/Exception.h"
 #include "cling/MetaProcessor/MetaProcessor.h"
 #include "cling/Utils/Output.h"
@@ -22,6 +21,7 @@
 
 #include "clang/Basic/LangOptions.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Interpreter/CodeCompletion.h"
 
 namespace {
   ///\brief Class that specialises the textinput TabCompletion to allow Cling
@@ -71,7 +71,7 @@ namespace {
                                    llvmDir.c_str(), std::nullopt,
                                    moduleExtensions,
                                    /*AutoComplete=*/true));
-    auto CC = cling::ClingCodeCompleter();
+    auto CC = clang::ReplCodeCompleter();
     CC.codeComplete(InterpCI.get(), Buffer.str(), 1U, Pos + 1,
                     MainInterp.getCI(), Results);
 

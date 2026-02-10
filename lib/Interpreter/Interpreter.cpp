@@ -27,7 +27,6 @@
 #include "cling/Interpreter/AutoloadCallback.h"
 #include "cling/Interpreter/CIFactory.h"
 #include "cling/Interpreter/ClangInternalState.h"
-#include "cling/Interpreter/ClingCodeCompleteConsumer.h"
 #include "cling/Interpreter/CompilationOptions.h"
 #include "cling/Interpreter/DynamicExprInfo.h"
 #include "cling/Interpreter/DynamicLibraryManager.h"
@@ -51,6 +50,7 @@
 #include "clang/Frontend/ASTConsumers.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/Utils.h"
+#include "clang/Interpreter/CodeCompletion.h"
 #include "clang/Lex/ExternalPreprocessorSource.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
@@ -1041,7 +1041,7 @@ namespace cling {
                             moduleExtensions,
                             /*AutoComplete=*/true));
 
-    auto CC = ClingCodeCompleter();
+    auto CC = clang::ReplCodeCompleter();
     CC.codeComplete(InterpCI.get(), line, 1U, cursor + 1, this->getCI(),
                     completions);
 
