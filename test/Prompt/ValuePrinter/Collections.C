@@ -9,6 +9,7 @@
 
 // RUN: cat %s | %cling -Xclang -verify 2>&1 | FileCheck %s
 
+#include <array>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -77,7 +78,15 @@ S
 // CHECK-NEXT: (std::set<std::pair<int, std::string> > &) { {4 , "0"}, {14 , "1"}, {24 , "2"}, {34 , "3"}, {44 , "4"} }
 
 MM
-// (std::map<std::string, std::map<int, std::pair<int, std::string> > > &) { "0" => { 0 => {0 , "00"}, 1 => {3 , "05"}, 2 => {6 , "010"} }, "1" => { 0 => {0 , "10"}, 1 => {3 , "15"}, 2 => {6 , "110"} }, "2" => { 0 => {0 , "20"}, 1 => {3 , "25"}, 2 => {6 , "210"} }, "3" => { 0 => {0 , "30"}, 1 => {3 , "35"}, 2 => {6 , "310"} }, "4" => { 0 => {0 , "40"}, 1 => {3 , "45"}, 2 => {6 , "410"} } }
+// CHECK-NEXT: (std::map<std::string, std::map<int, std::pair<int, std::string> > > &) { "0" => { 0 => {0 , "00"}, 1 => {3 , "05"}, 2 => {6 , "010"} }, "1" => { 0 => {0 , "10"}, 1 => {3 , "15"}, 2 => {6 , "110"} }, "2" => { 0 => {0 , "20"}, 1 => {3 , "25"}, 2 => {6 , "210"} }, "3" => { 0 => {0 , "30"}, 1 => {3 , "35"}, 2 => {6 , "310"} }, "4" => { 0 => {0 , "40"}, 1 => {3 , "45"}, 2 => {6 , "410"} } }
+
+std::array<int, 3> Arr{42, 43, 44};
+Arr
+// CHECK-NEXT: (std::array<int, 3> &) { 42, 43, 44 }
+
+std::array<std::array<int, 2>, 3> ArrArr{{{1, 2}, {3, 4}, {5, 6}}};
+ArrArr
+// CHECK-NEXT: (std::array<std::array<int, 2>, 3> &) { { 1, 2 }, { 3, 4 }, { 5, 6 } }
 
 // expected-no-diagnostics
 .q

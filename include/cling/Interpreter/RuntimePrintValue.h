@@ -200,8 +200,13 @@ namespace cling {
       isMap(const T* M, const typename T::mapped_type* V = 0) { return M; }
       static constexpr const void* isMap(const void* M) { return nullptr; }
     };
+    template <typename CollectionType>
+    struct is_std_array : public std::false_type {};
 
-    // vector, set, deque etc.
+    template <typename T, std::size_t N>
+    struct is_std_array<std::array<T, N>> : public std::true_type {};
+
+    // vector, set, deque, array etc.
     template <typename CollectionType>
     inline auto printValue_impl(
         const CollectionType* obj,
@@ -220,6 +225,10 @@ namespace cling {
       // infinite recursion. This occurs with scalar values in nlohmann::json
       auto printWithRecursionGuard = [obj](const auto* ptr,
                                            const void* M) -> std::string {
+        // std::array begins at the same location as the object itself, but it
+        // is not infinitely recursive
+        if constexpr (is_std_array<CollectionType>::value)
+          return printValue(ptr, M);
         if (static_cast<const void*>(ptr) == static_cast<const void*>(obj))
           return "<recursion detected>";
         return printValue(ptr, M);
