@@ -450,6 +450,7 @@ namespace cling {
       }
     }
 
+    if (!NoRuntime) {
     // Intercept all atexit calls, as the Interpreter and functions will be long
     // gone when the -native- versions invoke them.
 #if defined(__GLIBC__)
@@ -533,6 +534,7 @@ namespace cling {
       Strm << ";\n";
 #endif
 #endif
+    } // !NoRuntime (atexit interception)
 
     if (!SyntaxOnly) {
       // Override the helper symbols injected by GenericLLVMIRPlatformSupport,
