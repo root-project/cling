@@ -161,6 +161,11 @@ module "std" [system] {
     export *
     header "fstream"
   }
+  module "format" {
+    requires cplusplus20
+    export *
+    header "format"
+  }
   module "functional" {
     export *
     header "functional"
