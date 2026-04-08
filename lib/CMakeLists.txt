@@ -8,7 +8,5 @@
 
 add_subdirectory(Interpreter)
 add_subdirectory(MetaProcessor)
-if(CLING_INCLUDE_TESTS)
-   add_subdirectory(UserInterface)
-endif()
+add_subdirectory(UserInterface)
 add_subdirectory(Utils)
