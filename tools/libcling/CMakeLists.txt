@@ -22,6 +22,7 @@ set(LIBS
   clangCodeGen
   clangBasic
   clangEdit
+  clangInterpreter
 
   clingUtils
 )

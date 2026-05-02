@@ -345,6 +345,17 @@ macro(add_cling_library name)
   # Set DISABLE_LLVM_LINK_LLVM_DYLIB to disable linking against shared LLVM
   llvm_add_library(${name} ${ARG_ENABLE_SHARED} DISABLE_LLVM_LINK_LLVM_DYLIB ${ARG_UNPARSED_ARGUMENTS} ${srcs})
 
+  # Suppress dllexport from Clang headers when building cling as static libs on MSVC.
+  # AddClang.cmake sets CLANG_BUILD_STATIC for clang targets, but cling targets
+  # (which include clang headers like Attrs.inc) miss it, causing thousands of
+  # __declspec(dllexport) symbols to leak into any DLL that links cling libs.
+  if(MSVC AND NOT CLANG_LINK_CLANG_DYLIB)
+    target_compile_definitions(${name} PUBLIC CLANG_BUILD_STATIC)
+    if(TARGET "obj.${name}")
+      target_compile_definitions("obj.${name}" PUBLIC CLANG_BUILD_STATIC)
+    endif()
+  endif()
+
   if (MSVC AND cling_ex_file_match)
     # /EHs because cling_runtime_internal_throwIfInvalidPointer is extern “C”
     if (cling_ex_file_match)
