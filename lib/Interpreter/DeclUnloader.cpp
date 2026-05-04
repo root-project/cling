@@ -580,12 +580,16 @@ namespace cling {
   bool DeclUnloader::VisitUsingShadowDecl(UsingShadowDecl* USD) {
     // UsingShadowDecl: NamedDecl, Redeclarable
     bool Successful = true;
-    // FIXME: This is needed when we have newest clang:
-    //Successful = VisitRedeclarable(USD, USD->getDeclContext());
+    Successful = VisitRedeclarable(USD, USD->getDeclContext());
     Successful &= VisitNamedDecl(USD);
 
     // Unregister from the using decl that it shadows.
-    USD->getIntroducer()->removeShadowDecl(USD);
+    // Guard: the introducer's shadow chain may reference already-freed
+    // declarations when unloading implicit template instantiations.
+    if (auto* Introducer = USD->getIntroducer()) {
+      if (llvm::is_contained(Introducer->shadows(), USD))
+        Introducer->removeShadowDecl(USD);
+    }
 
     return Successful;
   }
