@@ -551,6 +551,15 @@ IncrementalJIT::IncrementalJIT(
   Builder.setDataLayout(m_TM->createDataLayout());
   Builder.setExecutorProcessControl(std::move(EPC));
 
+  // Cling uses a single LLVMContext (SingleThreadedContext) and keeps raw
+  // pointers to Modules (Transaction::m_CompiledModule) for later unloading
+  // via TransactionUnloader::unloadModule.  When concurrent compilation is
+  // enabled, LLJIT sets CloneToNewContextOnEmit which clones each Module
+  // into a fresh context during materialization, destroying the original.
+  // That turns m_CompiledModule into a dangling pointer and crashes in
+  // RevertTransaction (use-after-free in the Module's function list).
+  Builder.setSupportConcurrentCompilation(false);
+
   if (m_JITLink) {
     Builder.setPrePlatformSetup([](llvm::orc::LLJIT& J) {
       // Try to enable debugging of JIT'd code (only works with JITLink for
