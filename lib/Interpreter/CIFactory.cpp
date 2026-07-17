@@ -366,9 +366,49 @@ namespace {
           sArguments.addArgument("-nostdinc++");
       }
 
-  #ifdef CLING_OSX_SYSROOT
-    sArguments.addArgument("-isysroot", CLING_OSX_SYSROOT);
-  #endif
+  #ifdef __APPLE__
+  //
+  // On macOS, we try to find the SDK location through the following steps:
+  //   - We check if the -isysroot option is specified and the directory exists
+  //   - If not, we check for the directory specified by the SDKROOT env
+  //     variable, which is handled by the driver internally
+  //   - If also that is not there, we execute xcrun as a last resort
+  //
+  {
+    auto arvIt = std::find(args.begin(), args.end(), "-isysroot");
+    std::string cling_osx_sysroot_directory;
+    if(arvIt != args.end() && ++arvIt != args.end())
+      cling_osx_sysroot_directory = *arvIt;
+    if (!llvm::sys::fs::exists(cling_osx_sysroot_directory)) {
+      if (!::getenv("SDKROOT")) {
+        std::array<char, 128> buffer;
+        const auto xcrun_cmd = "xcrun  --show-sdk-path";
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(
+            ::popen(xcrun_cmd, "r"), pclose);
+        if (!pipe) {
+          cling::errs() << "The option -isyroot was not passed to cling. "
+                        << "The command " << xcrun_cmd << " was tried to "
+                        << "find the SDK path on the  system, however, an "
+                        << "issue with the invocation occurred.\n";
+        } else {
+          cling_osx_sysroot_directory.clear();
+          // Read the output block by block
+          while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            cling_osx_sysroot_directory += buffer.data();
+          }
+          if (!cling_osx_sysroot_directory.empty()) {
+            cling_osx_sysroot_directory.pop_back();
+            sArguments.addArgument("-isysroot", cling_osx_sysroot_directory);
+          } else {
+            cling::errs() << "The command " << xcrun_cmd << " was tried to "
+                          << "find the SDK path on the system, however, no "
+                            "valid path was returned.\n";
+          }
+        }
+      }
+    }
+  }
+  #endif // __APPLE__
 
 #endif // _MSC_VER
 
