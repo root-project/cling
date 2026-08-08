@@ -17,12 +17,20 @@
 
 namespace cling {
   namespace utils {
+    static llvm::raw_ostream* sOutOverride = nullptr;
+
     llvm::raw_ostream& outs() {
+      if (sOutOverride)
+        return *sOutOverride;
       static llvm::raw_os_ostream sOut(std::cout);
       sOut.SetUnbuffered();
       if (llvm::sys::Process::StandardOutIsDisplayed())
         sOut.enable_colors(true);
       return sOut;
+    }
+
+    void setOuts(llvm::raw_ostream* s) {
+      sOutOverride = s;
     }
 
     llvm::raw_ostream& errs() {
