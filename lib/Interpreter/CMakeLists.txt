@@ -373,32 +373,6 @@ set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/CIFactory.cpp
              APPEND PROPERTY OBJECT_DEPENDS
              ${CMAKE_CURRENT_BINARY_DIR}/cling-compiledata.h)
 
-# If LLVM is external, but Clang is builtin, we must use some files
-# from patched (builtin) version of LLVM
-if ((NOT builtin_llvm) AND builtin_clang)
-  set(FixInclude "${CMAKE_SOURCE_DIR}/interpreter/llvm-project/llvm/include")
-
-  get_property(P SOURCE IncrementalJIT.cpp PROPERTY INCLUDE_DIRECTORIES)
-  list(INSERT P 0 ${FixInclude})
-  set_property(SOURCE IncrementalJIT.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
-
-  get_property(P SOURCE IncrementalExecutor.cpp PROPERTY INCLUDE_DIRECTORIES)
-  list(INSERT P 0 ${FixInclude})
-  set_property(SOURCE IncrementalExecutor.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
-
-  get_property(P SOURCE Interpreter.cpp PROPERTY INCLUDE_DIRECTORIES)
-  list(INSERT P 0 ${FixInclude})
-  set_property(SOURCE Interpreter.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
-
-  get_property(P SOURCE Transaction.cpp PROPERTY INCLUDE_DIRECTORIES)
-  list(INSERT P 0 ${FixInclude})
-  set_property(SOURCE Transaction.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
-
-  get_property(P SOURCE TransactionUnloader.cpp PROPERTY INCLUDE_DIRECTORIES)
-  list(INSERT P 0 ${FixInclude})
-  set_property(SOURCE TransactionUnloader.cpp PROPERTY INCLUDE_DIRECTORIES "${P}")
-endif()
-
 # If both LLVM and Clang are external, we need to define LLVM_PATH in order for
 # cling to use the correct (external) LLVM/Clang directories.
 if ((NOT builtin_llvm) AND (NOT builtin_clang))
