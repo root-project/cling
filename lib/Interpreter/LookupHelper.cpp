@@ -294,6 +294,14 @@ namespace cling {
         next = utils::Lookup::Named(&S, declName.substr(last, c + 1 - last), sofar);
         // If there is an ambiguity, we need to go the long route.
         if (next == (void *) -1) return false;
+        if (const auto *RD = dyn_cast_or_null<CXXRecordDecl>(next);
+            RD && RD->isInjectedClassName()) {
+          // We found an injected-class-name, which is not a scope.
+          // See [class.qual]p2.  Not skipping the injected-class-name, would
+          // lead to a wrong lookup result for "C::C" where C is a class name.
+          resultDecl = nullptr;
+          return true; // nothing found
+        }
         if (next) {
           resultDecl = next;
         }
