@@ -556,8 +556,7 @@ namespace cling {
 
   llvm::Module* IncrementalParser::StartModule() {
     return m_Interpreter->withLLVMContextDo([&](llvm::LLVMContext* Ctx) {
-      return getCodeGenerator()->StartModule(makeModuleName(), *Ctx,
-                                             getCI()->getCodeGenOpts());
+      return getCodeGenerator()->StartModule(makeModuleName(), *Ctx);
     });
   }
 
