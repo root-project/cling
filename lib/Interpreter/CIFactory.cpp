@@ -1355,6 +1355,10 @@ namespace {
     bool profilingEnabled =
         cling::utils::ConvertEnvValueToBool(std::getenv("CLING_PROFILE"));
 
+    // Make sure clang's driver mode is not influenced by the executable name
+    // https://github.com/llvm/llvm-project/issues/225385
+    argvCompile.push_back("--driver-mode=g++");
+
 #if __APPLE__ && __arm64__
     argvCompile.push_back("--target=arm64-apple-darwin20.3.0");
 #endif
