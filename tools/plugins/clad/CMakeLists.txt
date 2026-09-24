@@ -71,17 +71,19 @@ if (DEFINED CLAD_SOURCE_DIR)
   list(APPEND _clad_extra_settings SOURCE_DIR ${CLAD_SOURCE_DIR})
 else()
   list(APPEND _clad_extra_settings GIT_REPOSITORY https://github.com/vgvassilev/clad.git)
-  list(APPEND _clad_extra_settings GIT_TAG v2.4)
+  list(APPEND _clad_extra_settings GIT_TAG v2.5)
 endif()
 
 # list(APPEND _clad_patches_list "patch1.patch" "patch2.patch")
-list(APPEND _clad_patches_list "nullptr_dereference_fix.patch" "windows_build_fix.patch")
-set(_clad_patch_command
+#list(APPEND _clad_patches_list "nullptr_dereference_fix.patch" "windows_build_fix.patch")
+if (_clad_patches_list)
+  set(_clad_patch_command
       ${CMAKE_COMMAND} -E copy_directory
       ${CMAKE_SOURCE_DIR}/interpreter/cling/tools/plugins/clad/patches <SOURCE_DIR>
       && git checkout -q <SOURCE_DIR>
       && git apply --ignore-space-change --ignore-whitespace ${_clad_patches_list}
       )
+endif(_clad_patches_list)
 
 ExternalProject_Add(
   clad
