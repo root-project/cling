@@ -359,6 +359,12 @@ namespace {
   //
   class FunctionTemplateDeclExt : public FunctionTemplateDecl {
   public:
+    static llvm::FoldingSetVector<FunctionTemplateSpecializationInfo>&
+    getSpecializations(FunctionTemplateDecl* self) {
+      return static_cast<FunctionTemplateDeclExt*>(self)
+          ->getCommonPtr()
+          ->Specializations;
+    }
     static void removeSpecialization(FunctionTemplateDecl* self,
                                      const FunctionDecl* spec) {
       assert(self && spec && "Cannot be null!");
@@ -383,6 +389,12 @@ namespace {
   //
   class ClassTemplateDeclExt : public ClassTemplateDecl {
   public:
+    static llvm::FoldingSetVector<ClassTemplateSpecializationDecl>&
+    getSpecializations(ClassTemplateDecl* self) {
+      return static_cast<ClassTemplateDeclExt*>(self)
+          ->getCommonPtr()
+          ->Specializations;
+    }
     static void removeSpecialization(ClassTemplateDecl* self,
                                      ClassTemplateSpecializationDecl* spec) {
       assert(!isa<ClassTemplatePartialSpecializationDecl>(spec) &&
@@ -414,6 +426,12 @@ namespace {
   //
   class VarTemplateDeclExt : public VarTemplateDecl {
   public:
+    static llvm::FoldingSetVector<VarTemplateSpecializationDecl>&
+    getSpecializations(VarTemplateDecl* self) {
+      return static_cast<VarTemplateDeclExt*>(self)
+          ->getCommonPtr()
+          ->Specializations;
+    }
     static void removeSpecialization(VarTemplateDecl* self,
                                      VarTemplateSpecializationDecl* spec) {
       assert(!isa<VarTemplatePartialSpecializationDecl>(spec) &&
@@ -1054,10 +1072,17 @@ namespace cling {
   bool DeclUnloader::VisitFunctionTemplateDecl(FunctionTemplateDecl* FTD) {
     bool Successful = true;
 
-    // Remove specializations, but do not invalidate the iterator!
-    for (FunctionTemplateDecl::spec_iterator I = FTD->loaded_spec_begin(),
-           E = FTD->loaded_spec_end(); I != E; ++I)
-      Successful &= VisitFunctionDecl(*I, /*RemoveSpec=*/false);
+    // Remove the specializations loaded so far. Completing the redeclaration
+    // chain of a specialization can make clang lazily load further
+    // specializations of this template, growing the specialization set and
+    // invalidating any iterators over it; take a snapshot of the raw entries
+    // first.
+    llvm::SmallVector<FunctionTemplateSpecializationInfo*, 8> Specs;
+    for (auto& S : FunctionTemplateDeclExt::getSpecializations(FTD))
+      Specs.push_back(&S);
+    for (auto* Entry : Specs)
+      Successful &= VisitFunctionDecl(Entry->getFunction()->getMostRecentDecl(),
+                                      /*RemoveSpec=*/false);
 
     Successful &= VisitRedeclarableTemplateDecl(FTD);
     Successful &= VisitFunctionDecl(FTD->getTemplatedDecl());
@@ -1067,11 +1092,18 @@ namespace cling {
   bool DeclUnloader::VisitClassTemplateDecl(ClassTemplateDecl* CTD) {
     // ClassTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
-    // Remove specializations, but do not invalidate the iterator!
-    for (ClassTemplateDecl::spec_iterator I = CTD->loaded_spec_begin(),
-           E = CTD->loaded_spec_end(); I != E; ++I)
+    // Remove the specializations loaded so far. Completing the redeclaration
+    // chain of a specialization can make clang lazily load further
+    // specializations of this template, growing the specialization set and
+    // invalidating any iterators over it; take a snapshot of the raw entries
+    // first.
+    llvm::SmallVector<ClassTemplateSpecializationDecl*, 8> Specs;
+    for (auto& S : ClassTemplateDeclExt::getSpecializations(CTD))
+      Specs.push_back(&S);
+    for (auto* Entry : Specs)
       Successful &=
-          VisitClassTemplateSpecializationDecl(*I, /*RemoveSpec=*/false);
+          VisitClassTemplateSpecializationDecl(Entry->getMostRecentDecl(),
+                                               /*RemoveSpec=*/false);
 
     // Visit all redeclarations of this template to ensure the full
     // redecl chain is unloaded properly.
@@ -1112,12 +1144,18 @@ namespace cling {
   bool DeclUnloader::VisitVarTemplateDecl(VarTemplateDecl* VTD) {
     // VarTemplateDecl: TemplateDecl, Redeclarable
     bool Successful = true;
-    // Remove specializations, but do not invalidate the iterator!
-    for (VarTemplateDecl::spec_iterator I = VTD->loaded_spec_begin(),
-                                        E = VTD->loaded_spec_end();
-         I != E; ++I)
+    // Remove the specializations loaded so far. Completing the redeclaration
+    // chain of a specialization can make clang lazily load further
+    // specializations of this template, growing the specialization set and
+    // invalidating any iterators over it; take a snapshot of the raw entries
+    // first.
+    llvm::SmallVector<VarTemplateSpecializationDecl*, 8> Specs;
+    for (auto& S : VarTemplateDeclExt::getSpecializations(VTD))
+      Specs.push_back(&S);
+    for (auto* Entry : Specs)
       Successful &=
-          VisitVarTemplateSpecializationDecl(*I, /*RemoveSpec=*/false);
+          VisitVarTemplateSpecializationDecl(Entry->getMostRecentDecl(),
+                                             /*RemoveSpec=*/false);
 
     Successful &= VisitRedeclarableTemplateDecl(VTD);
     Successful &= Visit(VTD->getTemplatedDecl());
