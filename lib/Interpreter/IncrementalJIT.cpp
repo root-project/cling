@@ -567,6 +567,10 @@ IncrementalJIT::IncrementalJIT(
   LLJITBuilder Builder;
   Builder.setDataLayout(m_TM->createDataLayout());
   Builder.setExecutorProcessControl(std::move(EPC));
+  // Our builtin LLVM uses LLVM_ENABLE_THREADS=OFF, but when concurrent
+  // compilation is available we need to disable it. Otherwise LLJIT clones
+  // modules on emit, invalidating Transaction::m_CompiledModule.
+  Builder.setSupportConcurrentCompilation(false);
 
   if (m_JITLink) {
     Builder.setPrePlatformSetup([](llvm::orc::LLJIT& J) {
