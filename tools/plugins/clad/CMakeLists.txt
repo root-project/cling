@@ -13,17 +13,29 @@ set(clad_install_dir ${CMAKE_BINARY_DIR}/etc/cling/)
 set(CLAD_INCLUDE_DIRS ${clad_install_dir})
 # Clad Libraries
 set(CLAD_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+# Build clad in the configuration ROOT is being built in, whatever that is.
+# A fixed one is wrong against ROOT's own LLVM, because that is a build tree:
+# a build tree exports an IMPORTED_LOCATION for every entry of
+# CMAKE_CONFIGURATION_TYPES whether or not it compiled them, so cmake's
+# fallback to an available configuration never fires. It finds the location
+# for the configuration being built and hands the linker a path to a file that
+# was never produced.
+#
+# Nothing in the clad sub-build linked an LLVM library until clad 2.5 added
+# clad-tblgen, so a RelWithDebInfo ROOT asking for a Release clad went
+# unnoticed. It now fails as
+#   LNK1181: cannot open input file '...\llvm\Release\lib\LLVMTableGen.lib'
+#
+# winrtdebug needs no case of its own. It selects the debug runtime through
+# CMAKE_CXX_FLAGS, which is forwarded below, and is used with a Debug ROOT --
+# which is what $<CONFIG> then reports anyway.
 set(_clad_build_type ${CMAKE_CFG_INTDIR})
-if(MSVC AND NOT CMAKE_GENERATOR MATCHES Ninja)
-  if (winrtdebug)
-    set(_clad_build_type Debug)
-  else()
-    set(_clad_build_type Release)
-  endif()
-  set(EXTRA_BUILD_ARGS --config ${_clad_build_type})
-endif()
 if(NOT _clad_build_type STREQUAL "" AND NOT _clad_build_type STREQUAL ".")
-  set(EXTRA_BUILD_ARGS --config ${_clad_build_type})
+  # $<CONFIG> rather than ${_clad_build_type}: LOG_BUILD runs the build step
+  # from a script through `cmake -P`, which never expands MSBuild's
+  # $(Configuration). The library path below is read by MSBuild itself, where
+  # it is expanded.
+  set(EXTRA_BUILD_ARGS --config $<CONFIG>)
 endif()
 
 if(NOT MSVC AND CMAKE_VERSION VERSION_LESS 3.31.1)
