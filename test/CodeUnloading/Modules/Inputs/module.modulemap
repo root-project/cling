@@ -1,0 +1,2 @@
+module Tmpl { header "Tmpl.h" export * }
+module TmplColliding { header "TmplColliding.h" export * }
