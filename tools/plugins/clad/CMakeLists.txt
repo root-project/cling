@@ -66,6 +66,15 @@ if (LLVM_FORCE_USE_OLD_TOOLCHAIN)
   list(APPEND _clad_extra_cmake_args -DLLVM_FORCE_USE_OLD_TOOLCHAIN=${LLVM_FORCE_USE_OLD_TOOLCHAIN})
 endif(LLVM_FORCE_USE_OLD_TOOLCHAIN)
 
+# LLVMConfig.cmake re-finds zstd for LLVMSupport with a bare find_package(zstd),
+# unlike zlib (set(ZLIB_ROOT @ZLIB_ROOT@) in llvm/cmake/modules/LLVMConfig.cmake.in).
+# clad's cmake has none of ROOT's search paths, so pass the zstd LLVM found.
+if(zstd_INCLUDE_DIR AND zstd_LIBRARY)
+  list(APPEND _clad_extra_cmake_args
+       -Dzstd_INCLUDE_DIR:PATH=${zstd_INCLUDE_DIR}
+       -Dzstd_LIBRARY:FILEPATH=${zstd_LIBRARY})
+endif()
+
 list(APPEND _clad_extra_cmake_args -DCLAD_BUILD_STATIC_ONLY=ON)
 
 # Wrap download, configure and build steps in a script to log output
