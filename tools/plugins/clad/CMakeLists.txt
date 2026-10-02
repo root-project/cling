@@ -97,6 +97,7 @@ endif()
 
 # list(APPEND _clad_patches_list "patch1.patch" "patch2.patch")
 #list(APPEND _clad_patches_list "nullptr_dereference_fix.patch" "windows_build_fix.patch")
+list(APPEND _clad_patches_list "lld_lookup_no_default_path.patch")
 if (_clad_patches_list)
   set(_clad_patch_command
       ${CMAKE_COMMAND} -E copy_directory

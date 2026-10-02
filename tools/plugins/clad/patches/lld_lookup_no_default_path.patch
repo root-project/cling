@@ -1,0 +1,37 @@
+From ff996e5e48d44fd2ac6d13955d2f23e2d68b39f9 Mon Sep 17 00:00:00 2001
+From: Aaron Jomy <aaronjomyjoseph@gmail.com>
+Date: Thu, 1 Oct 2026 20:28:09 +0200
+Subject: [PATCH] [cmake] Look LLD up only in LLD_DIR and next to the found
+ LLVM.
+
+The lookup also searched the default paths, PATH included. With a clang
+on PATH its LLDConfig.cmake loads the compiler's LLVMConfig.cmake over
+the one clad found; for ROOT built with clang 22 that sets
+LLVM_LINK_LLVM_DYLIB and clad-tblgen fails to link -lLLVM. Search only
+LLD_DIR and next to the found LLVM, with NO_DEFAULT_PATH, as LLVM_DIR
+is searched.
+---
+ CMakeLists.txt | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2ce58eabf..be4f38352 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -122,11 +122,13 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   # Emscripten builds of clangInterpreter link lldWasm/lldCommon
+   # (clang/lib/Interpreter/CMakeLists.txt), so ClangTargets.cmake references
+   # LLD targets and find_package(Clang) fails unless LLD is found first.
++  # Look only in LLD_DIR and next to the LLVM found above: the default paths
++  # include PATH, and the LLD of a clang on PATH loads that compiler's
++  # LLVMConfig.cmake over it.
+   if (DEFINED LLD_DIR)
+-    find_package(LLD QUIET CONFIG PATHS ${LLD_DIR} "${LLD_DIR}/lib/cmake/lld" "${LLD_DIR}/cmake" NO_DEFAULT_PATH)
+-  else()
+-    find_package(LLD QUIET CONFIG HINTS "${LLVM_DIR}/../lld" "${LLVM_BINARY_DIR}/lib/cmake/lld")
++    set(lld_search_paths ${LLD_DIR} "${LLD_DIR}/lib/cmake/lld" "${LLD_DIR}/cmake")
+   endif()
++  find_package(LLD QUIET CONFIG PATHS ${lld_search_paths} "${LLVM_DIR}/../lld" "${LLVM_BINARY_DIR}/lib/cmake/lld" NO_DEFAULT_PATH)
+ 
+   if (DEFINED CLANG_VERSION)
+     message(FATAL_ERROR "Clang's configuration is not versioned. Please set LLVM_VERSION instead.")
