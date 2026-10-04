@@ -681,6 +681,8 @@ namespace cling {
           // Interpreter::unload
           //   IncrementalParser::deregisterTransaction
           //     TransactionPool::releaseTransaction
+          PRT.setPointer(nullptr);
+          PRT.setInt(kFailed);
           m_Interpreter->unload(*T);
           return;
         }
