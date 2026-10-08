@@ -11,6 +11,8 @@
 #include "cling/Utils/Output.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Lex/HeaderSearchOptions.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -289,6 +291,20 @@ bool SplitPaths(llvm::StringRef PathStr,
   return AllExisted;
 }
 
+///\brief Spelling of a path to detect duplicate include paths: with preferred
+/// separators, without "." components and redundant or trailing separators,
+/// and on Windows in lower case. ".." components are kept, as they might
+/// follow symlinks.
+static std::string NormalizeForComparison(llvm::StringRef Path) {
+  llvm::SmallString<256> Normalized(Path);
+  llvm::sys::path::remove_dots(Normalized, /*remove_dot_dot=*/false);
+#ifdef _WIN32
+  return Normalized.str().lower();
+#else
+  return std::string(Normalized.str());
+#endif
+}
+
 void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
                      const char* Delim) {
 
@@ -298,16 +314,18 @@ void AddIncludePaths(llvm::StringRef PathStr, clang::HeaderSearchOptions& HOpts,
   else
     Paths.push_back(PathStr);
 
-  // Avoid duplicates
+  // Avoid duplicates, also if they are spelled differently, like
+  // "C:\ROOT\include" and "C:/ROOT/include/".
+  llvm::SmallVector<std::string, 32> Known;
+  for (const clang::HeaderSearchOptions::Entry& E : HOpts.UserEntries)
+    Known.push_back(NormalizeForComparison(E.Path));
   llvm::SmallVector<llvm::StringRef, 10> PathsChecked;
   for (llvm::StringRef Path : Paths) {
-    bool Exists = false;
-    for (const clang::HeaderSearchOptions::Entry& E : HOpts.UserEntries) {
-      if ((Exists = E.Path == Path))
-        break;
-    }
-    if (!Exists)
-      PathsChecked.push_back(Path);
+    std::string Normalized = NormalizeForComparison(Path);
+    if (llvm::is_contained(Known, Normalized))
+      continue;
+    Known.push_back(std::move(Normalized));
+    PathsChecked.push_back(Path);
   }
 
   const bool IsFramework = false;

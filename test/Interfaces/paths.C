@@ -28,5 +28,23 @@ TestC
 TestD
 // CHECK: (const char *) "TestD"
 
+// Paths that are only spelled differently are not added again.
+gCling->AddIncludePath(TEST_PATH "Paths//D/");
+gCling->AddIncludePaths(TEST_PATH "Paths/./A:" TEST_PATH "Paths/E:"
+                        TEST_PATH "Paths/E/");
+#ifdef _WIN32
+gCling->AddIncludePath(TEST_PATH "PATHS\\D");
+#endif
+#include "llvm/ADT/SmallVector.h"
+#include <algorithm>
+#include <string>
+llvm::SmallVector<std::string, 32> IncPaths;
+gCling->GetIncludePaths(IncPaths, false, false);
+(int)std::count_if(IncPaths.begin(), IncPaths.end(), [](const std::string& P) {
+  return P.find("Paths") != std::string::npos ||
+         P.find("PATHS") != std::string::npos;
+})
+// CHECK: (int) 5
+
 // expected-no-diagnostics
 .q
