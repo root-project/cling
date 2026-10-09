@@ -75,6 +75,8 @@ if(zstd_INCLUDE_DIR AND zstd_LIBRARY)
        -Dzstd_LIBRARY:FILEPATH=${zstd_LIBRARY})
 endif()
 
+list(APPEND _clad_extra_cmake_args -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=${CMAKE_INSTALL_RPATH_USE_LINK_PATH})
+
 list(APPEND _clad_extra_cmake_args -DCLAD_BUILD_STATIC_ONLY=ON)
 
 # Wrap download, configure and build steps in a script to log output
