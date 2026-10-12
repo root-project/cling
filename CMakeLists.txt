@@ -420,6 +420,23 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
     PATTERN "*.h"
     PATTERN "*.modulemap"
     )
+  # The modulemaps cling mounts at runtime with -fmodules. They are looked up
+  # next to the installed cling/Interpreter/RuntimeUniverse.h. The source
+  # tree's module.modulemap describes cling's compile-time headers; its
+  # runtime counterpart is module.modulemap.build. ROOT installs its own.
+  if(NOT DEFINED CLING_ROOT_BUILD)
+    install(DIRECTORY include/cling
+      DESTINATION include
+      FILES_MATCHING
+      PATTERN "*.modulemap"
+      PATTERN "module.modulemap" EXCLUDE
+      )
+
+    install(FILES include/cling/module.modulemap.build
+      DESTINATION include/cling
+      RENAME module.modulemap
+      )
+  endif()
 endif()
 
 add_definitions( -D_GNU_SOURCE -DCLING_VERSION=${CLING_VERSION})
