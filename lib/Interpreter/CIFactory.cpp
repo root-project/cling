@@ -380,7 +380,8 @@ namespace {
     if(arvIt != args.end() && ++arvIt != args.end())
       cling_osx_sysroot_directory = *arvIt;
     if (!llvm::sys::fs::exists(cling_osx_sysroot_directory)) {
-      if (!::getenv("SDKROOT")) {
+      auto env = std::getenv("SDKROOT");
+      if (!env || !*env) {
         std::array<char, 128> buffer;
         const auto xcrun_cmd = "xcrun  --show-sdk-path";
         std::unique_ptr<FILE, decltype(&pclose)> pipe(
