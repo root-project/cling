@@ -49,25 +49,51 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
       set(LLVM_UTILS_PROVIDED ON)
     endif()
 
-    if(EXISTS ${LLVM_MAIN_SRC_DIR}/utils/lit/lit.py)
-      set(LLVM_LIT ${LLVM_MAIN_SRC_DIR}/utils/lit/lit.py)
+    if(LLVM_BUILD_MAIN_SRC_DIR)
+      set(_cling_llvm_main_src_dir "${LLVM_BUILD_MAIN_SRC_DIR}")
+    else()
+      set(_cling_llvm_main_src_dir "${LLVM_MAIN_SRC_DIR}")
+    endif()
+    set(_cling_source_lit "${_cling_llvm_main_src_dir}/utils/lit/lit.py")
+
+    if(EXISTS "${_cling_source_lit}")
       if(NOT LLVM_UTILS_PROVIDED)
-        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/FileCheck utils/FileCheck)
-        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/count utils/count)
-        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/not utils/not)
+        add_subdirectory("${_cling_llvm_main_src_dir}/utils/FileCheck" utils/FileCheck)
+        add_subdirectory("${_cling_llvm_main_src_dir}/utils/count" utils/count)
+        add_subdirectory("${_cling_llvm_main_src_dir}/utils/not" utils/not)
         set(LLVM_UTILS_PROVIDED ON)
         set(CLING_TEST_DEPS FileCheck count not clang)
       endif()
-      set(UNITTEST_DIR ${LLVM_MAIN_SRC_DIR}/utils/unittest)
+      set(UNITTEST_DIR "${_cling_llvm_main_src_dir}/utils/unittest")
       if(EXISTS ${UNITTEST_DIR}/googletest/include/gtest/gtest.h
           AND NOT EXISTS ${LLVM_LIBRARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}
           AND EXISTS ${UNITTEST_DIR}/CMakeLists.txt)
         add_subdirectory(${UNITTEST_DIR} utils/unittest)
       endif()
+    endif()
+
+    if(LLVM_EXTERNAL_LIT)
+      # Preserve the user-provided runner used by AddLLVM.
+      set(LLVM_LIT "${LLVM_EXTERNAL_LIT}")
+    elseif(LLVM_DEFAULT_EXTERNAL_LIT AND EXISTS "${LLVM_DEFAULT_EXTERNAL_LIT}")
+      # Preserve the runner exported by LLVM's build or install tree.
+      set(LLVM_LIT "${LLVM_DEFAULT_EXTERNAL_LIT}")
+    elseif(EXISTS "${_cling_source_lit}")
+      set(LLVM_LIT "${_cling_source_lit}")
+      set(LLVM_EXTERNAL_LIT "${LLVM_LIT}" CACHE STRING
+        "Command used to spawn lit" FORCE)
     else()
       # Seek installed Lit.
-      find_program(LLVM_LIT "lit.py" ${LLVM_MAIN_SRC_DIR}/utils/lit
-        DOC "Path to lit.py")
+      if(CMAKE_HOST_WIN32 AND NOT CYGWIN)
+        find_program(LLVM_LIT NAMES llvm-lit.py lit DOC "Path to lit")
+      else()
+        find_program(LLVM_LIT NAMES llvm-lit lit DOC "Path to lit")
+      endif()
+      if(LLVM_LIT)
+        # AddLLVM executes LLVM_EXTERNAL_LIT, not LLVM_LIT.
+        set(LLVM_EXTERNAL_LIT "${LLVM_LIT}" CACHE STRING
+          "Command used to spawn lit" FORCE)
+      endif()
     endif()
 
     if(LLVM_LIT)
