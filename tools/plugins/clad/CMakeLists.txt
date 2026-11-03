@@ -88,9 +88,12 @@ set(_clad_extra_settings
   LOG_OUTPUT_ON_FAILURE ON
 )
 
+set(ROOT_CLAD_VERSION 2.5)
+set(ROOT_CLAD_HASH "f548a0e4ea6985a87fc7b878f38791f34f96ef1dc06a41ff35d7058d75af1417")
+
 # Sometimes it can be useful to try out a specific git tag, branch, or commit:
 # set(CLAD_REPOSITORY https://github.com/vgvassilev/clad.git)
-# set(CLAD_GIT_TAG v2.5)
+# set(CLAD_GIT_TAG v${ROOT_CLAD_VERSION})
 
 # If the CLAD_SOURCE_DIR variable is defined in the CMake configuration, we're
 # skipping the download of the sources and use the passed directory.
@@ -103,11 +106,12 @@ elseif(CLAD_GIT_TAG)
        UPDATE_COMMAND "")
   set(_clad_restore_cmd COMMAND git checkout -q <SOURCE_DIR>)
 else()
+  # The CERN mirror of the GitHub release archive, then GitHub itself, as for
+  # the other builtins.
   list(APPEND _clad_extra_settings
-       # Use the LCG mirror of the GitHub release artifact, as for the other builtins
-       URL ${lcgpackages}/clad-2.5.tar.gz
-       # URL https://github.com/vgvassilev/clad/archive/refs/tags/v2.5.tar.gz
-       URL_HASH SHA256=f548a0e4ea6985a87fc7b878f38791f34f96ef1dc06a41ff35d7058d75af1417)
+       URL ${lcgpackages}/clad-${ROOT_CLAD_VERSION}.tar.gz
+           https://github.com/vgvassilev/clad/archive/refs/tags/v${ROOT_CLAD_VERSION}.tar.gz
+       URL_HASH SHA256=${ROOT_CLAD_HASH})
   set(_clad_restore_cmd COMMAND git init -q)
 endif()
 
