@@ -25,6 +25,7 @@
 
 #include <cling/Interpreter/RuntimeOptions.h>
 #include "cling/Interpreter/Visibility.h"
+#include <cstddef>
 #include <new>
 
 namespace cling {
