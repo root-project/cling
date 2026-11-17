@@ -62,7 +62,7 @@
 */
 .rawInput 0
 // expected-error@input_line_23:1 {{expected expression}}
-// expected-error@<<< cling interactive line includer >>>:1 {{expected expression}}
+// expected-error {{expected expression}}
 
 
 // This is a side effect of wrapping, expression is compiled as */; so 2 errors
