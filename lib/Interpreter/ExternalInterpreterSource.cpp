@@ -39,7 +39,7 @@ namespace {
 
       if (clang::TagDecl* toTagDecl = dyn_cast<TagDecl>(To)) {
         toTagDecl->setHasExternalLexicalStorage();
-        toTagDecl->setMustBuildLookupTable();
+        toTagDecl->getPrimaryContext()->setMustBuildLookupTable();
         toTagDecl->setHasExternalVisibleStorage();
       }
       if (NamespaceDecl *toNamespaceDecl = dyn_cast<NamespaceDecl>(To)) {
