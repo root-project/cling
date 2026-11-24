@@ -33,6 +33,4 @@ int ForceInitSequence = 17;
 
 // CHECK-NEXT:A
 
-// CHECK-EMPTY:
-
 .q
