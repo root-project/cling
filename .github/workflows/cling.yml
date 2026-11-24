@@ -8,11 +8,14 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] # Remove macos-latest until exceptions are not supported by JITed code on Apple Silicon
+        os:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Install dependencies
         run: |
