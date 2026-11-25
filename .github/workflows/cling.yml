@@ -17,11 +17,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libedit-dev
-
       - name: Checkout LLVM
         uses: actions/checkout@v6
         with:
