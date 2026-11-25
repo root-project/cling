@@ -112,7 +112,9 @@ else()
        DOWNLOAD_DIR ${ROOT_DOWNLOAD_DIR}
        URL ${lcgpackages}/clad-${ROOT_CLAD_VERSION}.tar.gz
            https://github.com/vgvassilev/clad/archive/refs/tags/v${ROOT_CLAD_VERSION}.tar.gz
-       URL_HASH SHA256=${ROOT_CLAD_HASH})
+       URL_HASH SHA256=${ROOT_CLAD_HASH}
+       # CMP0135 NEW behavior, which cling's cmake_minimum_required() resets
+       DOWNLOAD_EXTRACT_TIMESTAMP FALSE)
   set(_clad_restore_cmd COMMAND git init -q)
 endif()
 
