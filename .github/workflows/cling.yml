@@ -16,7 +16,13 @@ jobs:
           - ubuntu-26.04
     runs-on: ${{ matrix.os }}
 
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+
     steps:
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+
       - name: Checkout LLVM
         uses: actions/checkout@v6
         with:
@@ -37,6 +43,8 @@ jobs:
         working-directory: build
         run: |
           cmake ../llvm/llvm/ \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
             -DLLVM_EXTERNAL_PROJECTS=cling \
             -DLLVM_EXTERNAL_CLING_SOURCE_DIR=../cling/ \
             -DLLVM_ENABLE_PROJECTS="clang" \
