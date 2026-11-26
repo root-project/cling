@@ -17,8 +17,12 @@
 namespace cling {
   namespace utils {
     ///\brief The 'stdout' stream. llvm::raw_ostream wrapper of std::cout
-    ///
+    /// Can be redirected via setOuts().
     llvm::raw_ostream& outs();
+
+    ///\brief Redirect cling::outs() to a custom stream.
+    /// Pass nullptr to restore the default (std::cout).
+    void setOuts(llvm::raw_ostream* s);
 
     ///\brief The 'stderr' stream. llvm::raw_ostream wrapper of std::cerr
     ///
@@ -69,6 +73,7 @@ namespace cling {
     typedef outstring<0>    stdstrstream;
   }
   using utils::outs;
+  using utils::setOuts;
   using utils::errs;
   using utils::log;
 
